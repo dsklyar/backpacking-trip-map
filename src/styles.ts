@@ -1,8 +1,4 @@
 export const styles = {
-	container: {
-		backgroundColor: "#000",
-		height: "100vh",
-	},
 	"@global": {
 		button: {
 			padding: 0,
@@ -20,7 +16,7 @@ export const styles = {
 			padding: 0,
 			height: "100vh",
 			width: "100vw",
-			backgroundColor: "#000",
+			backgroundColor: "#f5f5f5",
 			display: "flex",
 			alignItems: "center",
 			justifyContent: "center",

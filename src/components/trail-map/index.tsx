@@ -22,16 +22,18 @@ import {
 	UniversalCamera,
 	StandardMaterial,
 	Curve3,
+	Frustum,
 } from "@babylonjs/core";
 import { TILE_MAP } from "./map-data";
 import { Canvas } from "../canvas";
 import { useState, useEffect } from "react";
+import { Trace } from "@/reducers/trail.reducer";
 
 const useStyles = createUseStyles(styles);
 
 interface IProps {
 	traceEnabled: boolean;
-	trailPoints: Vector3[];
+	trailPoints: Trace[];
 	onMapClick: (point: Vector3) => void;
 }
 
@@ -44,8 +46,6 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 	useEffect(() => {
 		if (scene) {
 			scene.onPointerObservable.add(({ pickInfo }) => {
-				// debugger;
-				console.log(traceEnabled);
 				if (!traceEnabled) {
 					return;
 				}
@@ -61,22 +61,65 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 
 	useEffect(() => {
 		let traceMesh: Nullable<LinesMesh> = null;
-		if (scene) {
-			if (trailPoints.length > 1) {
-				const a = Curve3.CreateCatmullRomSpline(trailPoints, trailPoints.length * 2, false);
-				const path3d = new Path3D(a.getPoints());
-				const curve = path3d.getCurve();
-				traceMesh = Mesh.CreateLines("traceMesh", curve, scene);
-				traceMesh.color = Color3.Red();
-			}
+		let startNodeMesh: Nullable<Mesh> = null;
+		let endNodeMesh: Nullable<Mesh> = null;
+
+		if (!scene) {
+			return;
 		}
+
+		const nodeMaterial = new StandardMaterial("nodeMaterial", scene);
+		nodeMaterial.diffuseColor = Color3.Red();
+
+		if (trailPoints.length > 0) {
+			const { point } = trailPoints[0];
+			startNodeMesh = MeshBuilder.CreateDisc(
+				"startNodeMesh",
+				{ radius: 0.01, arc: 1, tessellation: 64 },
+				scene,
+			);
+			startNodeMesh.position = new Vector3(point.x, point.y, -0.01);
+			startNodeMesh.material = nodeMaterial;
+		}
+
+		if (!traceEnabled && trailPoints.length > 1) {
+			const { point } = trailPoints[trailPoints.length - 1];
+			endNodeMesh = MeshBuilder.CreateDisc(
+				"endNodeMesh",
+				{ radius: 0.01, arc: 1, tessellation: 64 },
+				scene,
+			);
+			endNodeMesh.position = new Vector3(point.x, point.y, -0.01);
+			endNodeMesh.material = nodeMaterial;
+		}
+
+		if (trailPoints.length > 1) {
+			const points = trailPoints.reduce((acc, { point }) => {
+				acc.push(point);
+				return acc;
+			}, [] as Vector3[]);
+			const catmul = Curve3.CreateCatmullRomSpline(points, points.length * 2, false);
+			const path3d = new Path3D(catmul.getPoints());
+			const curve = path3d.getCurve();
+			traceMesh = Mesh.CreateLines("traceMesh", curve, scene);
+			traceMesh.color = Color3.Red();
+		}
+
 		return () => {
 			if (traceMesh !== null) {
 				scene?.removeMesh(traceMesh);
 				traceMesh.dispose();
 			}
+			if (startNodeMesh !== null) {
+				scene?.removeMesh(startNodeMesh);
+				startNodeMesh.dispose();
+			}
+			if (endNodeMesh !== null) {
+				scene?.removeMesh(endNodeMesh);
+				endNodeMesh.dispose();
+			}
 		};
-	}, [scene, trailPoints]);
+	}, [scene, traceEnabled, trailPoints]);
 
 	const onSceneReady = (scene: Scene): void => {
 		//#region Camera
@@ -103,11 +146,18 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 		camera.inertia = 0.2;
 		camera.speed = 0.2;
 
+		const mat = camera.getProjectionMatrix();
+		console.log(mat);
+
 		// Camera limit preset
 		scene.registerBeforeRender(() => {
 			// prevent X/Y-axis camera rotation
 			camera.rotation.x = 0;
 			camera.rotation.y = 0;
+
+			// const projectionMatrix = camera.getProjectionMatrix();
+			// const frustrumPlanes = Frustum.GetPlanes(projectionMatrix);
+			// console.log(frustrumPlanes);
 
 			// prevent camera from dipping above -1 on Z-axis
 			if (camera.position.z > -1) {
@@ -175,17 +225,9 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 			}
 		}
 
+		// planeMeshes.forEach
+
 		setScene(scene);
-		//#endregion
-
-		//#region Markers
-
-		const mat = new StandardMaterial("discMat", scene);
-		mat.diffuseColor = Color3.Red();
-		const disc = MeshBuilder.CreateDisc("disc", { radius: 0.05, arc: 1, tessellation: 64 }, scene);
-		disc.position = new Vector3(0, 0, -0.01);
-		disc.material = mat;
-
 		//#endregion
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any

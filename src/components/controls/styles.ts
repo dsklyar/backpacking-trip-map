@@ -4,10 +4,11 @@ export const styles = {
 		paddingTop: 10,
 	},
 	button: {
-		color: "white",
+		color: "black",
 		fontFamily: "Roboto",
 		fontSize: 16,
-		border: "1px solid white",
+		fontWeight: 500,
+		border: "2px solid black",
 		boxSizing: "border-box",
 		margin: 10,
 		borderRadius: 30,

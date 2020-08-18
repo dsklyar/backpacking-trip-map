@@ -11,6 +11,7 @@ import {
 	dataAddPointAction,
 } from "@/actions/trail.actions";
 import { Vector3 } from "@babylonjs/core";
+import { Legend } from "../legend";
 
 const useStyles = createUseStyles(styles);
 
@@ -19,7 +20,7 @@ export const Layout: React.FC = () => {
 	const dispatch = useDispatch();
 
 	const traceEnabled = useSelector((state: IStoreState) => state.trail.traceEnabled);
-	const trailPoints = useSelector((state: IStoreState) => state.trail.points);
+	const trailPoints = useSelector((state: IStoreState) => state.trail.traces);
 
 	const onTraceClick = () => dispatch(uiToggleTraceAction(!traceEnabled));
 	const onMapClick = (point: Vector3) => dispatch(dataAddPointAction(point));
@@ -29,6 +30,7 @@ export const Layout: React.FC = () => {
 		<div className={classes.container}>
 			<TrailMap traceEnabled={traceEnabled} trailPoints={trailPoints} onMapClick={onMapClick} />
 			<Control traceEnabled={traceEnabled} onTraceClick={onTraceClick} onUndoClick={onUndoClick} />
+			<Legend />
 		</div>
 	);
 };
