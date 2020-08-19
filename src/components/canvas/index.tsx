@@ -2,7 +2,14 @@ import * as React from "react";
 import { createUseStyles } from "react-jss";
 import { styles } from "./styles";
 import { useState, useEffect, useRef } from "react";
-import { Engine, Scene, EngineOptions, SceneOptions, Nullable } from "@babylonjs/core";
+import {
+	Engine,
+	Scene,
+	EngineOptions,
+	SceneOptions,
+	Nullable,
+	AssetsManager,
+} from "@babylonjs/core";
 
 const useStyles = createUseStyles(styles);
 
@@ -15,7 +22,7 @@ interface IProps {
 	adaptToDeviceRatio?: boolean;
 	sceneOptions?: SceneOptions;
 	onRender: (scene: Scene) => void;
-	onSceneReady: (scene: Scene) => void;
+	onSceneReady: (scene: Scene, assetManger: AssetsManager) => void;
 }
 
 export const Canvas: React.FC<IProps> = (props: IProps) => {
@@ -56,14 +63,14 @@ export const Canvas: React.FC<IProps> = (props: IProps) => {
 			setLoaded(true);
 			const engine = new Engine(reactCanvas.current, antialias, engineOptions, adaptToDeviceRatio);
 			const scene = new Scene(engine, sceneOptions);
+			const assetManger = new AssetsManager(scene);
 			setScene(scene);
 			if (scene.isReady()) {
-				onSceneReady(scene);
+				onSceneReady(scene, assetManger);
 			} else {
-				scene.onReadyObservable.addOnce((scene: Scene) => onSceneReady(scene));
+				scene.onReadyObservable.addOnce((scene: Scene) => onSceneReady(scene, assetManger));
 			}
 
-			console.log("LOADED");
 			engine.runRenderLoop(() => {
 				if (typeof onRender === "function") {
 					onRender(scene);
@@ -74,7 +81,7 @@ export const Canvas: React.FC<IProps> = (props: IProps) => {
 
 		return () => {
 			if (scene !== null) {
-				console.log("rip");
+				console.info("RIP SCENE");
 				// Probably dont want to RIP the whole scene, unless I need to recreate from scratch
 				// scene.dispose();
 			}

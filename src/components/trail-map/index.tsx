@@ -17,6 +17,8 @@ import {
 	Animation,
 	Nullable,
 	UniversalCamera,
+	AssetsManager,
+	TextureAssetTask,
 } from "@babylonjs/core";
 import { TILE_MAP } from "../../utils/map-data";
 import { Canvas } from "../canvas";
@@ -93,7 +95,9 @@ export const TrailMap: React.FC<IProps> = ({
 	}, [scene, routes]);
 	//#endregion
 
-	const onSceneReady = (scene: Scene): void => {
+	const onSceneReady = (scene: Scene, assetManager: AssetsManager): void => {
+		setScene(scene);
+
 		//#region Camera
 
 		// This creates and positions a free camera (non-mesh)
@@ -157,41 +161,60 @@ export const TrailMap: React.FC<IProps> = ({
 		light.intensity = 0.5;
 		//#endregion
 
-		//#region Map
-
-		const col_step = 7;
-		const row_step = 9;
-		const planeMeshes: Mesh[] = [];
+		//#region Loading Assets
+		const materials: { [key: string]: BackgroundMaterial } = {};
 		for (let rowIndex = 0; rowIndex < TILE_MAP.length; rowIndex++) {
 			for (let tileIndex = 0; tileIndex < TILE_MAP[rowIndex].length; tileIndex++) {
 				const tile = TILE_MAP[rowIndex][tileIndex];
 				if (!tile) {
 					continue;
 				}
-				const planeMesh = MeshBuilder.CreatePlane(
-					`plane-${rowIndex}-${tileIndex}`,
-					{ width: col_step, height: row_step },
-					scene,
-				);
-				planeMesh.position = new Vector3(tileIndex * col_step, rowIndex * -row_step, 0);
-				const planeMaterial = new BackgroundMaterial(
-					`planeMaterial-${rowIndex}-${tileIndex}`,
-					scene,
-				);
-				planeMaterial.diffuseTexture = new Texture(tile.source, scene);
-				planeMesh.material = planeMaterial;
-
-				if (tile.name === "sonoraPass") {
-					// moveCameraTo(planeMesh.position, 50, camera);
-				}
-
-				planeMeshes.push(planeMesh);
+				const textureName = `planeTexture-${rowIndex}-${tileIndex}`;
+				const textureTask = assetManager.addTextureTask(textureName, tile.source);
+				textureTask.onSuccess = (task: TextureAssetTask) => {
+					const materialName = `planeMaterial-${rowIndex}-${tileIndex}`;
+					const planeMaterial = new BackgroundMaterial(materialName, scene);
+					planeMaterial.diffuseTexture = task.texture;
+					materials[materialName] = planeMaterial;
+				};
 			}
 		}
+		assetManager.loadAsync();
+		assetManager.onFinish = () => {
+			console.info("FINISHED LOADING");
+			buildMap();
+		};
+		//#endregion
 
-		// planeMeshes.forEach
+		//#region Map
+		const buildMap = (): void => {
+			const col_step = 7;
+			const row_step = 9;
+			const planeMeshes: Mesh[] = [];
+			for (let rowIndex = 0; rowIndex < TILE_MAP.length; rowIndex++) {
+				for (let tileIndex = 0; tileIndex < TILE_MAP[rowIndex].length; tileIndex++) {
+					const tile = TILE_MAP[rowIndex][tileIndex];
+					if (!tile) {
+						continue;
+					}
+					const planeMesh = MeshBuilder.CreatePlane(
+						`plane-${rowIndex}-${tileIndex}`,
+						{ width: col_step, height: row_step },
+						scene,
+					);
+					planeMesh.position = new Vector3(tileIndex * col_step, rowIndex * -row_step, 0);
+					const materialName = `planeMaterial-${rowIndex}-${tileIndex}`;
+					planeMesh.material = materials[materialName];
 
-		setScene(scene);
+					if (tile.name === "sonoraPass") {
+						// moveCameraTo(planeMesh.position, 50, camera);
+					}
+
+					planeMeshes.push(planeMesh);
+				}
+			}
+		};
+
 		//#endregion
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
