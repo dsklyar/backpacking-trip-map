@@ -50,10 +50,19 @@ export const Canvas: React.FC<IProps> = (props: IProps) => {
 					scene.getEngine().resize();
 				}
 			};
-			window.addEventListener("resize", resize);
+			const onKeyDown = (e: KeyboardEvent) => {
+				switch (e.code) {
+					case "KeyW" || "KeyA" || "KeyS" || "KeyD" || "KeyQ" || "KeyE": {
+						if (reactCanvas && reactCanvas.current) reactCanvas.current.focus();
+					}
+				}
+			};
 
+			window.addEventListener("resize", resize);
+			document.addEventListener("keydown", onKeyDown);
 			return () => {
 				window.removeEventListener("resize", resize);
+				document.removeEventListener("keydown", onKeyDown);
 			};
 		}
 	}, [scene]);
