@@ -1,7 +1,7 @@
 export const styles = {
 	"@keyframes animateSlideIn": {
 		"0%": {
-			marginLeft: "60%",
+			marginLeft: "70%",
 		},
 		"100%": {
 			marginLeft: "0%",
@@ -12,7 +12,7 @@ export const styles = {
 			marginLeft: "0%",
 		},
 		"100%": {
-			marginLeft: "60%",
+			marginLeft: "70%",
 		},
 	},
 	slideIn: {

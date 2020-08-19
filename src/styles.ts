@@ -21,7 +21,7 @@ export const styles = {
 			padding: 0,
 			height: "100vh",
 			width: "100vw",
-			backgroundColor: "#f5f5f5",
+			backgroundColor: "#faf0e6",
 			display: "flex",
 			alignItems: "center",
 			justifyContent: "center",

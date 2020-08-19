@@ -3,6 +3,7 @@ export const styles = {
 		canvas: {
 			width: (props: { width?: number }) => props?.width,
 			height: (props: { height?: number }) => props?.height,
+			padding: 10,
 		},
 	},
 };

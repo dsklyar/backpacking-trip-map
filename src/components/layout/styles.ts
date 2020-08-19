@@ -17,13 +17,14 @@ export const styles = {
 		"& > div": {
 			fontFamily: "Roboto",
 			display: "block",
+			color: "#c99789",
 		},
 		"& > div:first-child": {
 			fontSize: 26,
 		},
 		"& > div:last-child": {
 			marginTop: 5,
-			fontSize: 13,
+			fontSize: 16,
 		},
 	},
 };

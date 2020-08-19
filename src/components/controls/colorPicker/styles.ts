@@ -12,7 +12,7 @@ export const styles = {
 		borderRadius: 10,
 		margin: 2.5,
 		"&:checked": {
-			opacity: 1,
+			opacity: 0.6,
 			position: "relative",
 			"&::after": {
 				content: '""',
