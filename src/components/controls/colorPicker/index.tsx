@@ -11,7 +11,7 @@ interface IProps {
 
 const useStyles = createUseStyles(styles);
 
-export const ColorPicker: React.FC<IProps> = ({ colors, startingIndex, onChange }) => {
+export const ColorPicker: React.FC<IProps> = React.memo(({ colors, startingIndex, onChange }) => {
 	const classes = useStyles();
 	const [checkedIndex, setCheckedIndex] = useState<number>(startingIndex);
 
@@ -35,4 +35,6 @@ export const ColorPicker: React.FC<IProps> = ({ colors, startingIndex, onChange 
 			))}
 		</div>
 	);
-};
+});
+
+ColorPicker.displayName = "ColorPicker";

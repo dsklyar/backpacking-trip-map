@@ -13,7 +13,7 @@ enum KeyEnum {
 	Q = "KeyQ",
 }
 
-export const Legend: React.FC = () => {
+export const Legend: React.FC = React.memo(() => {
 	const classes = useStyles();
 	return (
 		<div className={classes.container}>
@@ -37,14 +37,16 @@ export const Legend: React.FC = () => {
 			</div>
 		</div>
 	);
-};
+});
+
+Legend.displayName = "Legend";
 
 interface IProps {
 	letter: string;
 	keyCode: KeyEnum;
 }
 
-const Key: React.FC<IProps> = ({ letter, keyCode }) => {
+const Key: React.FC<IProps> = React.memo(({ letter, keyCode }) => {
 	const classes = useStyles();
 	const [keyToggled, setKeyToggle] = React.useState<boolean>(false);
 
@@ -75,4 +77,6 @@ const Key: React.FC<IProps> = ({ letter, keyCode }) => {
 			<span>{letter}</span>
 		</div>
 	);
-};
+});
+
+Key.displayName = "Key";

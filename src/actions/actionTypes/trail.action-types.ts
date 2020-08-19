@@ -6,5 +6,6 @@ export const trailActionTypes = {
 	DATA: {
 		ADD_POINT: "trail/data/add_point",
 		UNDO_ADD_POINT: "trail/data/undo_add_point",
+		REMOVE_LAST_ROUTE: "trail/data/remove_last_route",
 	},
 };

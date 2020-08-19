@@ -29,7 +29,7 @@ export interface IRoute {
 const EMPTY_ROUTE: IRoute = {
 	traces: [],
 	length: 0,
-	color: "#000",
+	color: "#FF0000",
 	dirty: false,
 };
 
@@ -102,6 +102,12 @@ export const trailReducer: Reducer<ITrailState, IAction> = (
 					traces: trimmedTraces,
 					length: calculateDistance(trimmedTraces),
 				},
+			};
+		}
+		case ActionTypes.TRAIL.DATA.REMOVE_LAST_ROUTE: {
+			return {
+				...state,
+				routes: state.routes.length ? [...state.routes.slice(0, -1)] : [],
 			};
 		}
 		case ActionTypes.TRAIL.UI.SELECT_TRACE_COLOR: {

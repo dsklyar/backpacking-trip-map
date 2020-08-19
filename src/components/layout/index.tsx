@@ -10,6 +10,7 @@ import {
 	dataUndoAddPointAction,
 	dataAddPointAction,
 	uiSelectTraceColorAction,
+	dataRemoveLatRouteAction,
 } from "@/actions/trail.actions";
 import { Vector3 } from "@babylonjs/core";
 import { Legend } from "../legend";
@@ -22,10 +23,20 @@ export const Layout: React.FC = () => {
 
 	const editMode = useSelector((state: IStoreState) => state.trail.editMode);
 	const inProgressRoute = useSelector((state: IStoreState) => state.trail.inProgressRoute);
+	const routes = useSelector((state: IStoreState) => state.trail.routes);
+
+	const isCancelable = inProgressRoute.traces.length === 0 && editMode;
+	const isRouteRemovable = routes.length > 0 && !editMode;
 
 	const onTraceClick = () => dispatch(uiToggleTraceAction(!editMode));
 	const onMapClick = (point: Vector3) => dispatch(dataAddPointAction(point));
-	const onUndoClick = () => dispatch(dataUndoAddPointAction());
+	const onUndoClick = () =>
+		isCancelable
+			? dispatch(uiToggleTraceAction(!editMode))
+			: isRouteRemovable
+			? dispatch(dataRemoveLatRouteAction())
+			: dispatch(dataUndoAddPointAction());
+
 	const onColorSelect = (color: string) => dispatch(uiSelectTraceColorAction(color));
 
 	return (
@@ -37,9 +48,15 @@ export const Layout: React.FC = () => {
 				</div>
 			</Card>
 			<Card>
-				<TrailMap editMode={editMode} inProgressRoute={inProgressRoute} onMapClick={onMapClick} />
+				<TrailMap
+					editMode={editMode}
+					inProgressRoute={inProgressRoute}
+					routes={routes}
+					onMapClick={onMapClick}
+				/>
 				<Control
 					editMode={editMode}
+					isCancelable={isCancelable}
 					onTraceClick={onTraceClick}
 					onUndoClick={onUndoClick}
 					onColorSelect={onColorSelect}

@@ -3,11 +3,13 @@ import { createUseStyles } from "react-jss";
 import { styles } from "./styles";
 import { ColorPicker } from "./colorPicker";
 import { Button } from "./button";
+import { SlideAnimate } from "../animation/slide-animate";
 
 const useStyles = createUseStyles(styles);
 
 interface IProps {
 	editMode: boolean;
+	isCancelable?: boolean;
 	onTraceClick?: () => void;
 	onUndoClick?: () => void;
 	onColorSelect?: (color: string) => void;
@@ -15,6 +17,7 @@ interface IProps {
 
 export const Control: React.FC<IProps> = ({
 	editMode,
+	isCancelable,
 	onTraceClick,
 	onUndoClick,
 	onColorSelect,
@@ -22,7 +25,7 @@ export const Control: React.FC<IProps> = ({
 	const classes = useStyles();
 
 	const traceBtnText = editMode ? "Save Route" : "New Route";
-	const undoBtnText = editMode ? "Undo Segment" : "Undo Route";
+	const undoBtnText = isCancelable ? "Cancel" : editMode ? "Undo Segment" : "Undo Route";
 
 	const colors = [
 		{ name: "red", value: "#FF0000" },
@@ -42,7 +45,9 @@ export const Control: React.FC<IProps> = ({
 				<Button text={undoBtnText} onClick={onUndoClick} className={classes.undoButton} />
 			</div>
 			<div className={classes.right}>
-				<ColorPicker colors={colors} startingIndex={0} onChange={onChange} />
+				<SlideAnimate show={editMode}>
+					<ColorPicker colors={colors} startingIndex={0} onChange={onChange} />
+				</SlideAnimate>
 			</div>
 		</div>
 	);

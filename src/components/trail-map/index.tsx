@@ -15,112 +15,83 @@ import {
 	CubicEase,
 	EasingFunction,
 	Animation,
-	Path3D,
-	Color3,
 	Nullable,
-	LinesMesh,
 	UniversalCamera,
-	StandardMaterial,
-	Curve3,
 } from "@babylonjs/core";
-import { TILE_MAP } from "./map-data";
+import { TILE_MAP } from "../../utils/map-data";
 import { Canvas } from "../canvas";
 import { useState, useEffect } from "react";
-import { Trace, IRoute } from "@/reducers/trail.reducer";
+import { IRoute } from "@/reducers/trail.reducer";
+import { RouteGraphic } from "@/utils/RouteGraphic";
 
 const useStyles = createUseStyles(styles);
 
 interface IProps {
 	editMode: boolean;
+	routes: IRoute[];
 	inProgressRoute: IRoute;
 	onMapClick: (point: Vector3) => void;
 }
 
-export const TrailMap: React.FC<IProps> = ({ editMode, inProgressRoute, onMapClick }: IProps) => {
+export const TrailMap: React.FC<IProps> = ({
+	editMode,
+	routes,
+	inProgressRoute,
+	onMapClick,
+}: IProps) => {
 	const classes = useStyles();
 	const [scene, setScene] = useState<Nullable<Scene>>(null);
 
-	const { traces, color } = inProgressRoute;
-
 	console.log("render TrailMap");
 
+	//#region On Pointer useEffect
 	useEffect(() => {
-		if (scene) {
-			scene.onPointerObservable.add(({ pickInfo }) => {
-				if (!editMode) {
-					return;
-				}
-				if (pickInfo?.pickedPoint) {
-					onMapClick(pickInfo?.pickedPoint);
-				}
-			}, PointerEventTypes.POINTERDOWN);
+		if (!scene) {
+			return;
 		}
+		scene.onPointerObservable.add(({ pickInfo }) => {
+			if (!editMode) {
+				return;
+			}
+			if (pickInfo?.pickedPoint) {
+				onMapClick(pickInfo?.pickedPoint);
+			}
+		}, PointerEventTypes.POINTERDOWN);
 		return () => {
 			scene?.onPointerObservable.clear();
 		};
 	}, [onMapClick, scene, editMode]);
+	//#endregion
 
+	//#region  InProgress Route Renderer useEffect
 	useEffect(() => {
-		let traceMesh: Nullable<LinesMesh> = null;
-		let startNodeMesh: Nullable<Mesh> = null;
-		let endNodeMesh: Nullable<Mesh> = null;
-
 		if (!scene) {
 			return;
 		}
-
-		const nodeMaterial = new StandardMaterial("nodeMaterial", scene);
-		nodeMaterial.diffuseColor = Color3.FromHexString(color);
-
-		if (traces.length > 0) {
-			const { point } = traces[0];
-			startNodeMesh = MeshBuilder.CreateDisc(
-				"startNodeMesh",
-				{ radius: 0.01, arc: 1, tessellation: 64 },
-				scene,
-			);
-			startNodeMesh.position = new Vector3(point.x, point.y, -0.01);
-			startNodeMesh.material = nodeMaterial;
-		}
-
-		if (!editMode && traces.length > 1) {
-			const { point } = traces[traces.length - 1];
-			endNodeMesh = MeshBuilder.CreateDisc(
-				"endNodeMesh",
-				{ radius: 0.01, arc: 1, tessellation: 64 },
-				scene,
-			);
-			endNodeMesh.position = new Vector3(point.x, point.y, -0.01);
-			endNodeMesh.material = nodeMaterial;
-		}
-
-		if (traces.length > 1) {
-			const points = traces.reduce((acc, { point }) => {
-				acc.push(point);
-				return acc;
-			}, [] as Vector3[]);
-			const catmul = Curve3.CreateCatmullRomSpline(points, points.length * 2, false);
-			const path3d = new Path3D(catmul.getPoints());
-			const curve = path3d.getCurve();
-			traceMesh = Mesh.CreateLines("traceMesh", curve, scene);
-			traceMesh.color = Color3.FromHexString(color);
-		}
-
+		const inProgressRouteGraphic = new RouteGraphic(scene, inProgressRoute, "inProgress");
+		inProgressRouteGraphic.render();
 		return () => {
-			if (traceMesh !== null) {
-				scene?.removeMesh(traceMesh);
-				traceMesh.dispose();
-			}
-			if (startNodeMesh !== null) {
-				scene?.removeMesh(startNodeMesh);
-				startNodeMesh.dispose();
-			}
-			if (endNodeMesh !== null) {
-				scene?.removeMesh(endNodeMesh);
-				endNodeMesh.dispose();
-			}
+			inProgressRouteGraphic.dispose();
 		};
-	}, [scene, editMode, traces, color]);
+	}, [scene, inProgressRoute]);
+	//#endregion
+
+	//#region  Saved Routes Renderer useEffect
+	useEffect(() => {
+		if (!scene) {
+			return;
+		}
+		const routeGraphics: RouteGraphic[] = [];
+		routes.forEach((route, index) => {
+			const graphic = new RouteGraphic(scene, route, `${index}-route`);
+			graphic.render();
+			routeGraphics.push(graphic);
+		});
+		return () => {
+			routeGraphics.forEach((graphic) => graphic.dispose());
+		};
+	}, [scene, routes]);
+	//#endregion
 
 	const onSceneReady = (scene: Scene): void => {
 		//#region Camera
@@ -147,18 +118,11 @@ export const TrailMap: React.FC<IProps> = ({ editMode, inProgressRoute, onMapCli
 		camera.inertia = 0.2;
 		camera.speed = 0.2;
 
-		const mat = camera.getProjectionMatrix();
-		console.log(mat);
-
 		// Camera limit preset
 		scene.registerBeforeRender(() => {
 			// prevent X/Y-axis camera rotation
 			camera.rotation.x = 0;
 			camera.rotation.y = 0;
-
-			// const projectionMatrix = camera.getProjectionMatrix();
-			// const frustrumPlanes = Frustum.GetPlanes(projectionMatrix);
-			// console.log(frustrumPlanes);
 
 			// prevent camera from dipping above -1 on Z-axis
 			if (camera.position.z > -1) {
@@ -190,9 +154,7 @@ export const TrailMap: React.FC<IProps> = ({ editMode, inProgressRoute, onMapCli
 		//#region Light
 		// This creates a light, aiming 0,1,0 - to the sky (non-mesh)
 		const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-
-		// Default intensity is 1. Let's dim the light a small amount
-		light.intensity = 0.7;
+		light.intensity = 0.5;
 		//#endregion
 
 		//#region Map
@@ -236,9 +198,6 @@ export const TrailMap: React.FC<IProps> = ({ editMode, inProgressRoute, onMapCli
 		(window as any).debugger = scene.debugLayer;
 	};
 
-	/**
-	 * Will run on every frame render.  We are spinning the box on y-axis.
-	 */
 	const onRender = (scene: Scene): void => {
 		// console.log(editMode);
 	};
