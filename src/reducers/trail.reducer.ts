@@ -19,14 +19,30 @@ interface IEndTrace {
 
 export type Trace = IStartTrace | IPathTrace | IEndTrace;
 
-export interface ITrailState {
+export interface IRoute {
 	traces: Trace[];
-	traceEnabled: boolean;
+	length: number;
+	color: string;
+	dirty: boolean;
+}
+
+const EMPTY_ROUTE: IRoute = {
+	traces: [],
+	length: 0,
+	color: "#000",
+	dirty: false,
+};
+
+export interface ITrailState {
+	editMode: boolean;
+	routes: IRoute[];
+	inProgressRoute: IRoute;
 }
 
 export const DEFAULT_TRAIL_STATE: ITrailState = {
-	traces: [],
-	traceEnabled: false,
+	editMode: false,
+	routes: [],
+	inProgressRoute: EMPTY_ROUTE,
 };
 
 export const trailReducer: Reducer<ITrailState, IAction> = (
@@ -35,39 +51,84 @@ export const trailReducer: Reducer<ITrailState, IAction> = (
 ) => {
 	switch (action.type) {
 		case ActionTypes.TRAIL.UI.TOGGLE_TRACE: {
-			const traceEnabled = action.payload;
-			const updatedTraces = [...state.traces];
-			if (updatedTraces.length > 1) {
-				updatedTraces[updatedTraces.length - 1].type = traceEnabled ? "path" : "end";
+			const editMode = action.payload;
+			if (!editMode) {
+				return {
+					...state,
+					routes: state.inProgressRoute.dirty
+						? [...state.routes, state.inProgressRoute]
+						: state.routes,
+					inProgressRoute: EMPTY_ROUTE,
+					editMode,
+				};
 			}
 			return {
 				...state,
-				traceEnabled,
-				traces: updatedTraces,
+				editMode,
 			};
 		}
 		case ActionTypes.TRAIL.DATA.ADD_POINT: {
-			const isTraceStart = state.traceEnabled && state.traces.length === 0;
+			if (!state.editMode) {
+				return state;
+			}
+			const isTraceStart = state.editMode && state.inProgressRoute.traces.length === 0;
 			const newTrace: Trace = isTraceStart
 				? { type: "start", point: action.payload }
 				: { type: "path", point: action.payload };
+			const updatedTraces = isTraceStart ? [newTrace] : [...state.inProgressRoute.traces, newTrace];
 			return {
 				...state,
-				traces: isTraceStart ? [newTrace] : [...state.traces, newTrace],
+				inProgressRoute: {
+					...state.inProgressRoute,
+					dirty: true,
+					traces: updatedTraces,
+					length: calculateDistance(updatedTraces),
+				},
 			};
 		}
 		case ActionTypes.TRAIL.DATA.UNDO_ADD_POINT: {
-			const trimmedTraces = state.traces.length ? [...state.traces.slice(0, -1)] : [];
-			if (!state.traceEnabled && trimmedTraces.length > 1) {
-				trimmedTraces[trimmedTraces.length - 1].type = "end";
+			if (!state.editMode) {
+				return state;
 			}
+
+			const trimmedTraces = state.inProgressRoute.traces.length
+				? [...state.inProgressRoute.traces.slice(0, -1)]
+				: [];
+
 			return {
 				...state,
-				traces: trimmedTraces,
+				inProgressRoute: {
+					...state.inProgressRoute,
+					traces: trimmedTraces,
+					length: calculateDistance(trimmedTraces),
+				},
 			};
+		}
+		case ActionTypes.TRAIL.UI.SELECT_TRACE_COLOR: {
+			if (state.editMode) {
+				return {
+					...state,
+					inProgressRoute: {
+						...state.inProgressRoute,
+						color: action.payload,
+					},
+				};
+			}
+			return state;
 		}
 		default: {
 			return state;
 		}
 	}
+};
+
+const calculateDistance = (traces: Trace[]): number => {
+	let acc = 0;
+	for (let i = 0; i < traces.length - 1; i++) {
+		const traceA = traces[i];
+		const traceB = traces[i + 1];
+		const distance = Vector3.Distance(traceA.point, traceB.point);
+		acc += distance;
+	}
+	return acc;
 };

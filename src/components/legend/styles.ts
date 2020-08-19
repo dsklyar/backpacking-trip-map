@@ -5,7 +5,7 @@ export const styles = {
 		"& > div": {
 			display: "flex",
 			flexDirection: "column",
-			"&> span": {
+			"& > span": {
 				fontFamily: "Roboto",
 				fontSize: 17,
 				color: "#b4b4b4",
@@ -32,6 +32,7 @@ export const styles = {
 	},
 	key: {
 		margin: "2.5px",
+		userSelect: "none",
 		fontFamily: "Roboto",
 		fontSize: 22,
 		paddingTop: 12,

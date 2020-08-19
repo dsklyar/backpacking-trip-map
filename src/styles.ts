@@ -11,6 +11,11 @@ export const styles = {
 			should keep the default arrow cursor for buttons */
 			cursor: "pointer",
 		},
+		"input[type='radio']": {
+			appearance: "none",
+			outline: 0,
+			padding: 0,
+		},
 		"body, #app": {
 			margin: 0,
 			padding: 0,

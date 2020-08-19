@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@babylonjs/core": "4.2.0-alpha.33",
+    "clsx": "^1.1.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-jss": "^10.4.0",

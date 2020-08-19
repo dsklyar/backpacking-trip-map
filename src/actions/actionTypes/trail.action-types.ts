@@ -1,6 +1,7 @@
 export const trailActionTypes = {
 	UI: {
 		TOGGLE_TRACE: "trail/ui/toggle_trace",
+		SELECT_TRACE_COLOR: "trail/ui/select_trace_color",
 	},
 	DATA: {
 		ADD_POINT: "trail/data/add_point",

@@ -22,31 +22,32 @@ import {
 	UniversalCamera,
 	StandardMaterial,
 	Curve3,
-	Frustum,
 } from "@babylonjs/core";
 import { TILE_MAP } from "./map-data";
 import { Canvas } from "../canvas";
 import { useState, useEffect } from "react";
-import { Trace } from "@/reducers/trail.reducer";
+import { Trace, IRoute } from "@/reducers/trail.reducer";
 
 const useStyles = createUseStyles(styles);
 
 interface IProps {
-	traceEnabled: boolean;
-	trailPoints: Trace[];
+	editMode: boolean;
+	inProgressRoute: IRoute;
 	onMapClick: (point: Vector3) => void;
 }
 
-export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapClick }: IProps) => {
+export const TrailMap: React.FC<IProps> = ({ editMode, inProgressRoute, onMapClick }: IProps) => {
 	const classes = useStyles();
 	const [scene, setScene] = useState<Nullable<Scene>>(null);
+
+	const { traces, color } = inProgressRoute;
 
 	console.log("render TrailMap");
 
 	useEffect(() => {
 		if (scene) {
 			scene.onPointerObservable.add(({ pickInfo }) => {
-				if (!traceEnabled) {
+				if (!editMode) {
 					return;
 				}
 				if (pickInfo?.pickedPoint) {
@@ -57,7 +58,7 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 		return () => {
 			scene?.onPointerObservable.clear();
 		};
-	}, [onMapClick, scene, traceEnabled]);
+	}, [onMapClick, scene, editMode]);
 
 	useEffect(() => {
 		let traceMesh: Nullable<LinesMesh> = null;
@@ -69,10 +70,10 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 		}
 
 		const nodeMaterial = new StandardMaterial("nodeMaterial", scene);
-		nodeMaterial.diffuseColor = Color3.Red();
+		nodeMaterial.diffuseColor = Color3.FromHexString(color);
 
-		if (trailPoints.length > 0) {
-			const { point } = trailPoints[0];
+		if (traces.length > 0) {
+			const { point } = traces[0];
 			startNodeMesh = MeshBuilder.CreateDisc(
 				"startNodeMesh",
 				{ radius: 0.01, arc: 1, tessellation: 64 },
@@ -82,8 +83,8 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 			startNodeMesh.material = nodeMaterial;
 		}
 
-		if (!traceEnabled && trailPoints.length > 1) {
-			const { point } = trailPoints[trailPoints.length - 1];
+		if (!editMode && traces.length > 1) {
+			const { point } = traces[traces.length - 1];
 			endNodeMesh = MeshBuilder.CreateDisc(
 				"endNodeMesh",
 				{ radius: 0.01, arc: 1, tessellation: 64 },
@@ -93,8 +94,8 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 			endNodeMesh.material = nodeMaterial;
 		}
 
-		if (trailPoints.length > 1) {
-			const points = trailPoints.reduce((acc, { point }) => {
+		if (traces.length > 1) {
+			const points = traces.reduce((acc, { point }) => {
 				acc.push(point);
 				return acc;
 			}, [] as Vector3[]);
@@ -102,7 +103,7 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 			const path3d = new Path3D(catmul.getPoints());
 			const curve = path3d.getCurve();
 			traceMesh = Mesh.CreateLines("traceMesh", curve, scene);
-			traceMesh.color = Color3.Red();
+			traceMesh.color = Color3.FromHexString(color);
 		}
 
 		return () => {
@@ -119,7 +120,7 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 				endNodeMesh.dispose();
 			}
 		};
-	}, [scene, traceEnabled, trailPoints]);
+	}, [scene, editMode, traces, color]);
 
 	const onSceneReady = (scene: Scene): void => {
 		//#region Camera
@@ -196,7 +197,8 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 
 		//#region Map
 
-		const tile_step = 6;
+		const col_step = 7;
+		const row_step = 9;
 		const planeMeshes: Mesh[] = [];
 		for (let rowIndex = 0; rowIndex < TILE_MAP.length; rowIndex++) {
 			for (let tileIndex = 0; tileIndex < TILE_MAP[rowIndex].length; tileIndex++) {
@@ -206,10 +208,10 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 				}
 				const planeMesh = MeshBuilder.CreatePlane(
 					`plane-${rowIndex}-${tileIndex}`,
-					{ width: tile_step, height: tile_step },
+					{ width: col_step, height: row_step },
 					scene,
 				);
-				planeMesh.position = new Vector3(tileIndex * tile_step, rowIndex * -tile_step, 0);
+				planeMesh.position = new Vector3(tileIndex * col_step, rowIndex * -row_step, 0);
 				const planeMaterial = new BackgroundMaterial(
 					`planeMaterial-${rowIndex}-${tileIndex}`,
 					scene,
@@ -238,7 +240,7 @@ export const TrailMap: React.FC<IProps> = ({ traceEnabled, trailPoints, onMapCli
 	 * Will run on every frame render.  We are spinning the box on y-axis.
 	 */
 	const onRender = (scene: Scene): void => {
-		// console.log(traceEnabled);
+		// console.log(editMode);
 	};
 
 	return (

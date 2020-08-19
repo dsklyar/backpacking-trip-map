@@ -9,6 +9,7 @@ import {
 	uiToggleTraceAction,
 	dataUndoAddPointAction,
 	dataAddPointAction,
+	uiSelectTraceColorAction,
 } from "@/actions/trail.actions";
 import { Vector3 } from "@babylonjs/core";
 import { Legend } from "../legend";
@@ -19,18 +20,39 @@ export const Layout: React.FC = () => {
 	const classes = useStyles();
 	const dispatch = useDispatch();
 
-	const traceEnabled = useSelector((state: IStoreState) => state.trail.traceEnabled);
-	const trailPoints = useSelector((state: IStoreState) => state.trail.traces);
+	const editMode = useSelector((state: IStoreState) => state.trail.editMode);
+	const inProgressRoute = useSelector((state: IStoreState) => state.trail.inProgressRoute);
 
-	const onTraceClick = () => dispatch(uiToggleTraceAction(!traceEnabled));
+	const onTraceClick = () => dispatch(uiToggleTraceAction(!editMode));
 	const onMapClick = (point: Vector3) => dispatch(dataAddPointAction(point));
 	const onUndoClick = () => dispatch(dataUndoAddPointAction());
+	const onColorSelect = (color: string) => dispatch(uiSelectTraceColorAction(color));
 
 	return (
 		<div className={classes.container}>
-			<TrailMap traceEnabled={traceEnabled} trailPoints={trailPoints} onMapClick={onMapClick} />
-			<Control traceEnabled={traceEnabled} onTraceClick={onTraceClick} onUndoClick={onUndoClick} />
-			<Legend />
+			<Card>
+				<div className={classes.header}>
+					<div>Backpacking Trip Planner</div>
+					<div>by Daniel Sklyar</div>
+				</div>
+			</Card>
+			<Card>
+				<TrailMap editMode={editMode} inProgressRoute={inProgressRoute} onMapClick={onMapClick} />
+				<Control
+					editMode={editMode}
+					onTraceClick={onTraceClick}
+					onUndoClick={onUndoClick}
+					onColorSelect={onColorSelect}
+				/>
+			</Card>
+			<Card>
+				<Legend />
+			</Card>
 		</div>
 	);
+};
+
+const Card: React.FC = ({ children }) => {
+	const classes = useStyles();
+	return <div className={classes.card}>{children}</div>;
 };
