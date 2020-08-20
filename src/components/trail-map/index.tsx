@@ -4,27 +4,21 @@ import { styles } from "./styles";
 import "@babylonjs/inspector";
 import {
 	Vector3,
-	HemisphericLight,
 	MeshBuilder,
 	Scene,
 	Mesh,
-	Texture,
-	BackgroundMaterial,
 	PointerEventTypes,
-	FreeCamera,
-	CubicEase,
-	EasingFunction,
-	Animation,
 	Nullable,
-	UniversalCamera,
 	AssetsManager,
-	TextureAssetTask,
 } from "@babylonjs/core";
 import { TILE_MAP } from "../../utils/map-data";
 import { Canvas } from "../canvas";
 import { useState, useEffect } from "react";
 import { IRoute } from "@/reducers/trail.reducer";
 import { RouteGraphic } from "@/utils/RouteGraphic";
+import { CameraManager } from "@/utils/cameraManager";
+import { LightManager } from "@/utils/lightManager";
+import { AppAssetManger } from "@/utils/appAssetManager";
 
 const useStyles = createUseStyles(styles);
 
@@ -98,96 +92,21 @@ export const TrailMap: React.FC<IProps> = ({
 	const onSceneReady = (scene: Scene, assetManager: AssetsManager): void => {
 		setScene(scene);
 
-		//#region Camera
+		const cameraInitPos = new Vector3(0, 0, -2);
+		const cameraManager = new CameraManager(scene, cameraInitPos);
 
-		// This creates and positions a free camera (non-mesh)
-		const camera = new UniversalCamera("Camera", new Vector3(0, 0, -2), scene);
+		const targetEndVector = new Vector3(4, -9, -3);
+		cameraManager.moveTo(targetEndVector);
 
-		// This targets the camera to scene origin
-		camera.setTarget(Vector3.Zero());
+		const lightInitPos = new Vector3(0, 1, 0); // Vector(0,1,0) -> to the sky
+		const lightManager = new LightManager(scene, lightInitPos);
+		lightManager.setIntensity(0.5);
 
-		const canvas = scene.getEngine().getRenderingCanvas();
-		if (!canvas) {
-			return;
-		}
+		const appAssetManger = new AppAssetManger(scene, assetManager);
+		appAssetManger.queueMapTiles(TILE_MAP);
 
-		// This attaches the camera to the canvas
-		camera.attachControl(canvas, true);
-		camera.keysUpward.push(87);
-		camera.keysDownward.push(83);
-		camera.keysLeft.push(65);
-		camera.keysRight.push(68);
-		camera.keysUp.push(69);
-		camera.keysDown.push(81);
-		camera.inertia = 0.2;
-		camera.speed = 0.2;
-
-		// Camera limit preset
-		scene.registerBeforeRender(() => {
-			// prevent X/Y-axis camera rotation
-			camera.rotation.x = 0;
-			camera.rotation.y = 0;
-
-			// prevent camera from dipping above -1 on Z-axis
-			if (camera.position.z > -1) {
-				const { x, y } = camera.position;
-				camera.position.set(x, y, -1.01);
-			}
-		});
-
-		// Camera Animations
-		const moveCameraTo = (newPosition: Vector3, speed: number, camera: FreeCamera): void => {
-			const ease = new CubicEase();
-			ease.setEasingMode(EasingFunction.EASINGMODE_EASEINOUT);
-			Animation.CreateAndStartAnimation(
-				"at5",
-				camera,
-				"target",
-				speed,
-				120,
-				camera.target,
-				newPosition,
-				0,
-				ease,
-			);
-			camera.update();
-		};
-
-		//#endregion
-
-		//#region Light
-		// This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-		const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);
-		light.intensity = 0.5;
-		//#endregion
-
-		//#region Loading Assets
-		const materials: { [key: string]: BackgroundMaterial } = {};
-		for (let rowIndex = 0; rowIndex < TILE_MAP.length; rowIndex++) {
-			for (let tileIndex = 0; tileIndex < TILE_MAP[rowIndex].length; tileIndex++) {
-				const tile = TILE_MAP[rowIndex][tileIndex];
-				if (!tile) {
-					continue;
-				}
-				const textureName = `planeTexture-${rowIndex}-${tileIndex}`;
-				const textureTask = assetManager.addTextureTask(textureName, tile.source);
-				textureTask.onSuccess = (task: TextureAssetTask) => {
-					const materialName = `planeMaterial-${rowIndex}-${tileIndex}`;
-					const planeMaterial = new BackgroundMaterial(materialName, scene);
-					planeMaterial.diffuseTexture = task.texture;
-					materials[materialName] = planeMaterial;
-				};
-			}
-		}
-		assetManager.loadAsync();
-		assetManager.onFinish = () => {
-			console.info("FINISHED LOADING");
-			buildMap();
-		};
-		//#endregion
-
-		//#region Map
-		const buildMap = (): void => {
+		// Build Map
+		appAssetManger.load(() => {
 			const col_step = 7;
 			const row_step = 9;
 			const planeMeshes: Mesh[] = [];
@@ -204,26 +123,18 @@ export const TrailMap: React.FC<IProps> = ({
 					);
 					planeMesh.position = new Vector3(tileIndex * col_step, rowIndex * -row_step, 0);
 					const materialName = `planeMaterial-${rowIndex}-${tileIndex}`;
-					planeMesh.material = materials[materialName];
-
-					if (tile.name === "sonoraPass") {
-						// moveCameraTo(planeMesh.position, 50, camera);
-					}
-
+					planeMesh.material = appAssetManger.materials[materialName];
 					planeMeshes.push(planeMesh);
 				}
 			}
-		};
-
-		//#endregion
+		});
 
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		(window as any).debugger = scene.debugLayer;
 	};
 
-	const onRender = (scene: Scene): void => {
-		// console.log(editMode);
-	};
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	const onRender = (scene: Scene): void => {};
 
 	return (
 		<div>
