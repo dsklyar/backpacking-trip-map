@@ -15,10 +15,10 @@ import { TILE_MAP } from "../../utils/map-data";
 import { Canvas } from "../canvas";
 import { useState, useEffect } from "react";
 import { IRoute } from "@/reducers/trail.reducer";
-import { RouteGraphic } from "@/utils/RouteGraphic";
 import { CameraManager } from "@/utils/cameraManager";
 import { LightManager } from "@/utils/lightManager";
 import { AppAssetManger } from "@/utils/appAssetManager";
+import { RouteGraphic } from "@/utils/routeGraphic";
 
 const useStyles = createUseStyles(styles);
 
@@ -92,15 +92,15 @@ export const TrailMap: React.FC<IProps> = ({
 	const onSceneReady = (scene: Scene, assetManager: AssetsManager): void => {
 		setScene(scene);
 
-		const cameraInitPos = new Vector3(0, 0, -2);
+		const cameraInitPos = new Vector3(3, -3, -2);
 		const cameraManager = new CameraManager(scene, cameraInitPos);
 
-		const targetEndVector = new Vector3(4, -9, -3);
+		const targetEndVector = new Vector3(4, -9, -2);
 		cameraManager.moveTo(targetEndVector);
 
 		const lightInitPos = new Vector3(0, 1, 0); // Vector(0,1,0) -> to the sky
 		const lightManager = new LightManager(scene, lightInitPos);
-		lightManager.setIntensity(0.5);
+		lightManager.setIntensity(0.1);
 
 		const appAssetManger = new AppAssetManger(scene, assetManager);
 		appAssetManger.queueMapTiles(TILE_MAP);

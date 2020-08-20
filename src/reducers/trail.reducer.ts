@@ -1,6 +1,7 @@
 import { Reducer } from "redux";
 import { Vector3 } from "@babylonjs/core";
 import { ActionTypes } from "@/actions/actionTypes";
+import { GRANITE_DOME_ROUTE } from "@/constants";
 
 interface IStartTrace {
 	type: "start";
@@ -41,7 +42,7 @@ export interface ITrailState {
 
 export const DEFAULT_TRAIL_STATE: ITrailState = {
 	editMode: false,
-	routes: [],
+	routes: [GRANITE_DOME_ROUTE],
 	inProgressRoute: EMPTY_ROUTE,
 };
 
